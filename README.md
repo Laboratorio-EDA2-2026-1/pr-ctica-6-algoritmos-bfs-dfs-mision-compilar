@@ -51,6 +51,50 @@ Por lo tanto, el resultado de `nreinas(4)` es:
 
 ---
 
+##### SOLUCION PROBLEMA 1
+
+from typing import List
+
+def en_conflicto(parcial: List[int], fila: int, col: int) -> bool:
+    
+    for c, r in enumerate(parcial):
+        if r == fila:
+            return True
+        if abs(r - fila) == abs(c - col):
+            return True
+    return False
+
+
+def nreinas(N: int) -> List[List[int]]:
+    
+    soluciones: List[List[int]] = []
+    parcial: List[int] = []
+
+    def dfs(col: int):
+        if col == N:
+            soluciones.append(parcial.copy())
+            return
+
+        for fila in range(N):
+            if not en_conflicto(parcial, fila, col):
+                parcial.append(fila)
+                dfs(col + 1)
+                parcial.pop()
+
+    dfs(0)
+    return soluciones
+
+
+if __name__ == "__main__":
+        N = int(input("Ingrese el tamaño de N (1 - 8): "))
+        soluciones = nreinas(N)
+        print(f"\nSe encontraron {len(soluciones)} soluciones para N={N}:\n")
+        for i, sol in enumerate(soluciones, 1):
+            print(f"Solución {i}: {sol}")
+            
+
+---
+
 #### Ejercicio 2
 
 Definir una función en **Python** que reciba **dos entradas**:
@@ -93,6 +137,63 @@ Por lo tanto, el resultado de `nreinas2(4, A)` es:
 ### Punto Extra
 
 Para cada uno de los dos problemas de las `N` reinas, si además del resultado que pide cada inciso, la función devuelve **todas las soluciones posibles**, entonces se obtiene **un punto extra** en la **tarea** correspondiente a estos temas.
+
+---
+
+##### SOLUCION PROBLEMA 2
+
+from typing import List, Optional
+
+def en_conflicto(parcial: List[int], fila: int, col: int) -> bool:
+    for c, r in enumerate(parcial):
+        if r == fila:
+            return True
+        if abs(r - fila) == abs(c - col):
+            return True
+    return False
+
+
+def nreinas_con_obstaculos(N: int, A: List[int]) -> List[List[int]]:
+    soluciones: List[List[int]] = []
+    parcial: List[int] = []
+
+    def fila_bloqueada(col: int) -> Optional[int]:
+        if 0 <= col < len(A):
+            return A[col]
+        return None
+
+    def dfs(col: int):
+        if col == N:
+            soluciones.append(parcial.copy())
+            return
+
+        bloqueada = fila_bloqueada(col)
+        for fila in range(N):
+            if bloqueada is not None and fila == bloqueada:
+                continue 
+            if not en_conflicto(parcial, fila, col):
+                parcial.append(fila)
+                dfs(col + 1)
+                parcial.pop()
+
+    dfs(0)
+    return soluciones
+
+if __name__ == "__main__":
+    N = int(input("Ingresa el tamaño del tablero (1 - 8): "))
+    entrada = input("Ingresa el arreglo A (numero 1, numero 2, ... , numero N): ").strip()
+    if entrada:
+        A = [int(x) for x in entrada.split(",")]
+    else:
+        A = []
+
+    soluciones = nreinas_con_obstaculos(N, A)
+    print(f"\nSe encontraron {len(soluciones)} soluciones para N={N} con obstáculos {A}:\n")
+    if soluciones:
+        for i, sol in enumerate(soluciones, 1):
+            print(f"Solución {i}: {sol}")
+    else:
+        print("No se encontraron soluciones posibles.")
 
 ---
 
@@ -140,7 +241,47 @@ Por lo tanto, el resultado de la función con esas entradas es:
 `[2, 4]`
 
 donde los valores son las posiciones que ocupan el **7** y el **9** en el arreglo original.
+---
 
+#### SOLUCION PROBLEMA DEL INTERVALO
+
+def intervalo(A, q):
+    menor = None
+    mayor = None
+    indiceme = -1
+    indicema = -1
+
+    for i in range(len(A)):
+        if A[i] <= q:
+            if menor is None or A[i] > menor:
+                menor = A[i]
+                indiceme = i
+        if A[i] >= q:
+            if mayor is None or A[i] < mayor:
+                mayor = A[i]
+                indicema = i
+
+    if indiceme == -1:
+        menor = min(A)
+        indiceme = A.index(menor)
+    if indicema == -1:
+        mayor = max(A)
+        indicema = A.index(mayor)
+
+    return [indiceme, indicema]
+
+N = int(input("Ingrese el tamaño del arreglo N: "))
+A = []
+
+print("Ingrese los valores del arreglo A:")
+for i in range(N):
+    valor = int(input())
+    A.append(valor)
+
+q = float(input("Ingrese el valor racional q: "))
+
+resultado = intervalo(A, q)
+print(resultado)
 
 ---
 
