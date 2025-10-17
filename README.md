@@ -350,3 +350,149 @@ El cálculo debe **respetar los horarios** en los que cambian los tiempos estima
 
 ---
 
+
+#### SOLUCIÓN PROBLEMA PARTE 2 BFS TIEMPO TOTAL DE TRASLADO
+
+from collections import deque
+from typing import Dict, List, Optional
+
+Ciudad = str
+Grafo = Dict[Ciudad, Dict[Ciudad, int]]
+
+def bfs_path(g: Grafo, origen: Ciudad, destino: Ciudad) -> Optional[List[Ciudad]]:
+    if origen not in g or destino not in g:
+        return None
+
+    visitado = set([origen])
+    pred: Dict[Ciudad, Optional[Ciudad]] = {origen: None}
+    q = deque([origen])
+
+    while q:
+        u = q.popleft()
+        if u == destino:
+            break
+        for v in g[u]:
+            if v not in visitado:
+                visitado.add(v)
+                pred[v] = u
+                q.append(v)
+
+    if destino not in pred:
+        return None
+
+    camino: List[Ciudad] = []
+    actual: Optional[Ciudad] = destino
+    while actual is not None:
+        camino.append(actual)
+        actual = pred[actual]
+    camino.reverse()
+    return camino
+
+def factor_horario(minutos: int) -> float:
+    minutos=minutos % (24*60)
+    if 0 <= minutos < 6*60:
+        return 1.0
+    if 6 * 60 <= minutos < 16*60:
+        return 2.0
+    return 1.5
+
+def siguiente_cambio(minutos: int)->int:
+    md=minutos % (24*60)
+    dia_base= minutos - md
+    bordes= [6*60, 16*60, 24*60]
+    for b in bordes:
+        if md < b:
+            return dia_base + b
+    return dia_base + 24*60
+
+def tiempo_tramo_respetando_horario(inicio: int, duracion_base: int) -> int:
+    tiempo_base_restante = duracion_base
+    tiempo_real_acumulado = 0
+    t_actual = inicio
+    
+    while tiempo_base_restante > 0:
+        f = factor_horario(t_actual)
+        cambio = siguiente_cambio(t_actual)
+        tiempo_hasta_cambio = cambio - t_actual
+        
+        base_hasta_cambio = tiempo_hasta_cambio / f
+        base_restante = tiempo_base_restante
+        
+        if base_hasta_cambio >= base_restante:
+            tiempo_real_acumulado += base_restante * f
+            tiempo_base_restante = 0
+        else:
+            tiempo_real_acumulado += tiempo_hasta_cambio
+            tiempo_base_restante -= base_hasta_cambio
+            t_actual = cambio
+    
+    return int(tiempo_real_acumulado)
+
+def tiempo_total(g: Grafo, camino: List[Ciudad], inicio_min: int) -> int:
+    total = 0
+    t_actual = inicio_min
+    
+    print(f"\nRecorrido: {' → '.join(camino)}")
+    hora_inicio = inicio_min // 60
+    minuto_inicio = inicio_min % 60
+    print(f"Hora de inicio: {hora_inicio:02d}:{minuto_inicio:02d}")
+    print("\nDetalle del viaje:")
+    print("-" * 60)
+    
+    for u, v in zip(camino, camino[1:]):
+        base = g[u][v]
+        real = tiempo_tramo_respetando_horario(t_actual, base)
+        
+        hora_inicio_seg = t_actual // 60
+        minuto_inicio_seg = t_actual % 60
+        t_fin = t_actual + real
+        hora_fin_seg = t_fin // 60
+        minuto_fin_seg = t_fin % 60
+        
+        print(f"{u} → {v}: {base} min base → {real} min real")
+        print(f"  {hora_inicio_seg:02d}:{minuto_inicio_seg:02d} → {hora_fin_seg:02d}:{minuto_fin_seg:02d} | Acumulado: {total + real} min")
+        
+        total += real
+        t_actual = t_fin
+    
+    print("-" * 60)
+    print(f"Tiempo total: {total} minutos")
+    return total
+
+def grafo_rumania_demo() -> Grafo:
+    g: Grafo = {
+        "Giurgiu": {"Bucharest": 90},
+        "Bucharest": {"Giurgiu": 90, "Urziceni": 85, "Pitesti": 101, "Fagaras": 211},
+        "Urziceni": {"Bucharest": 85, "Hirsova": 98, "Vaslui": 142},
+        "Hirsova": {"Urziceni": 98, "Eforie": 86},
+        "Eforie": {"Hirsova": 86},
+        "Vaslui": {"Urziceni": 142, "Iasi": 92},
+        "Iasi": {"Vaslui": 92, "Neamt": 87},
+        "Neamt": {"Iasi": 87},
+        "Pitesti": {"Bucharest": 101, "Rimnicu Vilcea": 97, "Craiova": 138},
+        "Rimnicu Vilcea": {"Pitesti": 97, "Craiova": 146, "Sibiu": 80},
+        "Craiova": {"Pitesti": 138, "Rimnicu Vilcea": 146, "Drobeta": 120},
+        "Drobeta": {"Craiova": 120, "Mehadia": 75},
+        "Mehadia": {"Drobeta": 75, "Lugoj": 70},
+        "Lugoj": {"Mehadia": 70, "Timisoara": 111},
+        "Timisoara": {"Lugoj": 111, "Arad": 118},
+        "Arad": {"Timisoara": 118, "Sibiu": 140, "Zerind": 75},
+        "Zerind": {"Arad": 75, "Oradea": 71},
+        "Oradea": {"Zerind": 71, "Sibiu": 151},
+        "Sibiu": {"Arad": 140, "Oradea": 151, "Rimnicu Vilcea": 80, "Fagaras": 99},
+        "Fagaras": {"Sibiu": 99, "Bucharest": 211}
+    }
+    return g
+
+if __name__ == "__main__":
+    g = grafo_rumania_demo()
+    path = bfs_path(g, "Giurgiu", "Urziceni")
+    print("Camino (BFS, aristas):", path)
+
+    inicio_5am = 5 * 60
+    if path:
+        print("Tiempo total iniciando 5:00:", tiempo_total(g, path, inicio_5am), "min")
+
+    inicio_4am = 4 * 60
+    if path:
+        print("Tiempo total iniciando 4:00:", tiempo_total(g, path, inicio_4am), "min")
